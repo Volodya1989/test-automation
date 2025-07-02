@@ -2,23 +2,48 @@ import os
 import shutil
 import pytest
 from pathlib import Path
+from configs.config import BASE_URL
+from helpers.auth import login
+
 
 @pytest.fixture(scope="function")
 def context(browser, request):
-    # Use a temp directory to store videos initially
+    # Store videos temporarily during test
     temp_video_dir = Path("videos/tmp")
     temp_video_dir.mkdir(parents=True, exist_ok=True)
 
     context = browser.new_context(record_video_dir=str(temp_video_dir))
     page = context.new_page()
 
-    yield page  # <-- Run the test
+    yield page  # Test runs here
 
-    # Save video using the test function name
     test_name = request.node.name.replace("/", "_")
-    video_path = page.video.path()
-    final_path = Path("videos") / f"{test_name}.webm"
-    final_path.parent.mkdir(parents=True, exist_ok=True)
-    shutil.move(video_path, final_path)
+    context.close()  # This must happen before accessing video
 
+    # Move video if available
+    if page.video:
+        video_path = page.video.path()
+        final_path = Path("videos") / f"{test_name}.webm"
+        final_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(video_path, final_path)
+
+
+@pytest.fixture(scope="session")
+def storage_state(tmp_path_factory, browser):
+    context = browser.new_context()
+    page = context.new_page()
+
+    login(page, BASE_URL, "test@123.com", "123456")
+
+    storage_file = tmp_path_factory.mktemp("data") / "storage.json"
+    context.storage_state(path=str(storage_file))
+    context.close()
+    return str(storage_file)
+
+
+@pytest.fixture(scope="function")
+def auth_page(browser, storage_state):
+    context = browser.new_context(storage_state=storage_state)
+    page = context.new_page()
+    yield page
     context.close()
