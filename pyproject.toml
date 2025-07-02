@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "playwright_ui_db_framework_poetry"
+name = "test-automation"
 version = "0.1.0"
 description = "Playwright-based test framework with UI and DB validation"
 authors = ["Your Name <you@example.com>"]
