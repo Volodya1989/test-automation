@@ -9,3 +9,4 @@ class HomePage:
     def verify_home_loaded(self):
         expect(self.heading).to_be_visible()
         expect(self.user_button).to_be_visible()
+

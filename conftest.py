@@ -23,20 +23,21 @@ def storage_state(tmp_path_factory, browser):
 
 
 @pytest.fixture(scope="function")
-def auth_page(browser, storage_state, request):
+def auth_page(browser, request):
     temp_video_dir = Path("videos/tmp")
     temp_video_dir.mkdir(parents=True, exist_ok=True)
 
-    context = browser.new_context(
-        storage_state=storage_state,
-        record_video_dir=str(temp_video_dir)
-    )
+    context = browser.new_context(record_video_dir=str(temp_video_dir))
     page = context.new_page()
+
+    # ✅ Login directly here
+    login(page, BASE_URL, "test@123.com", "123456")
 
     yield page
 
     test_name = request.node.name.replace("/", "_")
     context.close()
+
     if page.video:
         video_path = page.video.path()
         final_path = Path("videos") / f"{test_name}.webm"
