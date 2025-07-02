@@ -1,26 +1,64 @@
 # Makefile for test automation with Poetry & Playwright
 
-.PHONY: setup install test report clean shell
+.PHONY: setup install test test-ui debug report allure-report clean clean-allure shell
 
-# Initial setup: install dependencies and Playwright browsers
 setup:
 	poetry install
 	poetry run playwright install
 
+generate-report:
+	@if ! command -v allure >/dev/null 2>&1; then \
+		echo "❌ Allure CLI not found. Install it via: brew install allure"; \
+		exit 1; \
+	fi
+	poetry run allure generate allure-results --clean -o allure-report
+	open allure-report/index.html
 
-# Run all tests using Pytest
+
+# Run all tests
 test:
 	poetry run pytest tests/
 
-# Run tests and generate Allure report
+# Run UI tests with visible browser and slow motion
+test-ui:
+	@echo "Running tests in Poetry environment"
+	rm -rf allure-results allure-report*
+	poetry run pytest tests/ui \
+		--headed \
+#		--slowmo=200 \
+		--video=retain-on-failure \
+		--alluredir=allure-results
+
+
+#	make generate-report
+
+
+# Debug mode (verbose, slow motion, headed)
+debug:
+	poetry run bash -c "pytest tests/ui --headed --slowmo=500 --alluredir=allure-results && \
+	poetry run allure generate allure-results --clean -o allure-report && \
+	open allure-report/index.html"
+
+# Run tests and generate + open timestamped Allure report
 report:
+	rm -rf allure-report*
 	poetry run pytest tests/ --alluredir=allure-results
-	poetry run allure serve allure-results
+	@timestamp=$$(date +"%Y%m%d-%H%M%S"); \
+	poetry run allure generate allure-results --clean -o allure-report-$$timestamp && \
+	open allure-report-$$timestamp/index.html
+
+# Just generate and open a report from existing results
+allure-report:
+	@timestamp=$$(date +"%Y%m%d-%H%M%S"); \
+	poetry run allure generate allure-results --clean -o allure-report-$$timestamp && \
+	open allure-report-$$timestamp/index.html
+
+# Clean reports
+clean:
+	rm -rf allure-results allure-report* test-results
+
+clean-allure: clean
 
 # Open Poetry shell
 shell:
 	poetry shell
-
-# Clean up test results and reports
-clean:
-	rm -rf allure-results
