@@ -8,24 +8,33 @@ from helpers.auth import login
 
 @pytest.fixture(scope="function")
 def context(browser, request):
-    # Store videos temporarily during test
+    """
+    Browser context fixture with video recording for each test.
+    Saves video under /videos/ and names it after the test function.
+    """
     temp_video_dir = Path("videos/tmp")
     temp_video_dir.mkdir(parents=True, exist_ok=True)
 
     context = browser.new_context(record_video_dir=str(temp_video_dir))
     page = context.new_page()
 
-    yield page  # Test runs here
+    yield page  # <-- run the actual test
 
     test_name = request.node.name.replace("/", "_")
-    context.close()  # This must happen before accessing video
 
-    # Move video if available
-    if page.video:
-        video_path = page.video.path()
-        final_path = Path("videos") / f"{test_name}.webm"
-        final_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(video_path, final_path)
+    # Ensure page is closed before finalizing context
+    try:
+        if page.video:
+            video_path = page.video.path()
+            final_path = Path("videos") / f"{test_name}.webm"
+            final_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(video_path, final_path)
+            print(f"✅ Video saved to: {final_path}")
+    except Exception as e:
+        print(f"⚠️ Could not save video for {test_name}: {e}")
+
+    page.close()
+    context.close()
 
 
 @pytest.fixture(scope="session")
@@ -37,13 +46,20 @@ def storage_state(tmp_path_factory, browser):
 
     storage_file = tmp_path_factory.mktemp("data") / "storage.json"
     context.storage_state(path=str(storage_file))
+
+    page.close()       # ✅ explicitly close the page
     context.close()
     return str(storage_file)
 
 
 @pytest.fixture(scope="function")
 def auth_page(browser, storage_state):
+    """
+    Returns a page with stored auth state (logged-in session).
+    Ensures clean context per test.
+    """
     context = browser.new_context(storage_state=storage_state)
     page = context.new_page()
     yield page
+    page.close()
     context.close()
