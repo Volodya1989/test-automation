@@ -1,10 +1,7 @@
-from pages.login_page import LoginPage
-from pages.home_page import HomePage
-
+import time
 def login(page, base_url, email, password):
-    login_page = LoginPage(page)
-    home_page = HomePage(page)
-
-    login_page.load(base_url)
-    login_page.login(email, password)
-    home_page.verify_home_loaded()
+    page.goto(base_url)
+    page.get_by_role("textbox", name="Email").fill(email)
+    page.get_by_role("textbox", name="Password").fill(password)
+    time.sleep(.6)
+    page.get_by_role("button", name="Sign in").click()

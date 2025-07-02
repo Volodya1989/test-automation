@@ -1,9 +1,11 @@
-from playwright.sync_api import Page, expect
+from playwright.sync_api import expect
 
 class HomePage:
-    def __init__(self, page: Page):
+    def __init__(self, page):
         self.page = page
+        self.heading = page.get_by_text("Best Sellers Books")
+        self.user_button = page.get_by_role("button", name="Vol")
 
     def verify_home_loaded(self):
-        expect(self.page.get_by_text("Best Sellers Books")).to_be_visible()
-        expect(self.page.get_by_role("button", name="Vol")).to_be_visible()
+        expect(self.heading).to_be_visible()
+        expect(self.user_button).to_be_visible()

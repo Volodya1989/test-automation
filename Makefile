@@ -34,10 +34,14 @@ test-ui:
 
 
 # Debug mode (verbose, slow motion, headed)
-debug:
-	poetry run bash -c "pytest tests/ui --headed --slowmo=500 --alluredir=allure-results && \
-	poetry run allure generate allure-results --clean -o allure-report && \
-	open allure-report/index.html"
+debug-ui:
+	poetry run pytest tests/ui \
+	--headed \
+	--slowmo=300 \
+	--capture=tee-sys \
+	--log-cli-level=INFO \
+	--tracing=retain-on-failure
+
 
 # Run tests and generate + open timestamped Allure report
 report:
